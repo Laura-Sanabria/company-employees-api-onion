@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id            Int       @id @default(autoincrement())
+  nombre        String
+  direccion     String
+  telefono      String
+  fechaCreacion DateTime  @default(now())
+  empleados     Employee[]
+}
+
+model Employee {
+  id         Int      @id @default(autoincrement())
+  nombre     String
+  apellido   String
+  correo     String   @unique
+  cargo      String
+  salario    Float
+  companiaId Int
+  compania   Company  @relation(fields: [companiaId], references: [id])
+}

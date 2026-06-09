@@ -7,6 +7,7 @@ import { BulkCreateEmployeesDto } from '../dtos/bulk-create-employees.dto';
 import { BulkDeleteEmployeesDto } from '../dtos/bulk-delete-employees.dto';
 import { EmployeeListQueryDto } from '../dtos/employee-list-query.dto';
 import { PagedQuery } from '../../domain/dtos/pagination.dto';
+import { Employee } from '../../domain/entities/employee.entity';
 
 @Injectable()
 export class EmployeeService {
@@ -87,7 +88,7 @@ export class EmployeeService {
 
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
     return this.uow.executeTransaction(async (tx) => {
-      const current = (await this.ensureEmployeeExists(tx, id)) as any;
+      const current = await this.ensureEmployeeExists(tx, id);
 
       if (updateEmployeeDto.companiaId) {
         await this.ensureCompanyExists(tx, updateEmployeeDto.companiaId);
@@ -109,7 +110,7 @@ export class EmployeeService {
 
   async patch(id: number, patchEmployeeDto: PatchEmployeeDto) {
     return this.uow.executeTransaction(async (tx) => {
-      const current = (await this.ensureEmployeeExists(tx, id)) as any;
+      const current = await this.ensureEmployeeExists(tx, id);
 
       if (patchEmployeeDto.companiaId) {
         await this.ensureCompanyExists(tx, patchEmployeeDto.companiaId);
@@ -152,13 +153,14 @@ export class EmployeeService {
   }
 
   private async ensureEmployeeExists(
-    tx: { employees: { findById: (id: number) => Promise<unknown> } },
+    tx: { employees: { findById: (id: number) => Promise<Employee | null> } },
     id: number,
-  ) {
+  ): Promise<Employee> {
     const employee = await tx.employees.findById(id);
     if (!employee) {
       throw new NotFoundException(`Empleado con ID ${id} no encontrado`);
     }
+    return employee;
   }
 
   private async ensureCompanyExists(

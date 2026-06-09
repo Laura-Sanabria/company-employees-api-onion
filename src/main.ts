@@ -1,8 +1,13 @@
 import 'dotenv/config';
-import { ValidationPipe, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ValidationPipe,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './api/filters/prisma-exception.filter';
+import { formatValidationErrors } from './api/pipes/validation.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,39 +16,21 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       exceptionFactory: (errors) => {
-        const formatError = (error: any, parentPath = ''): any[] => {
-          const property = error.property;
-          let path = parentPath;
-          if (parentPath) {
-            path = /^\d+$/.test(property) ? `${parentPath}[${property}]` : `${parentPath}.${property}`;
-          } else {
-            path = property;
-          }
+        const errores = formatValidationErrors(errors);
+        const queryFields = new Set(['pagina', 'tamano', 'orden', 'dir', 'buscar']);
+        const soloQueryParams =
+          errors.length > 0 && errors.every((e) => queryFields.has(e.property));
 
-          const list: any[] = [];
-          if (error.constraints) {
-            Object.values(error.constraints).forEach((detail: string) => {
-              list.push({
-                campo: path,
-                detalle: detail,
-              });
-            });
-          }
-
-          if (error.children && error.children.length > 0) {
-            error.children.forEach((child: any) => {
-              list.push(...formatError(child, path));
-            });
-          }
-
-          return list;
-        };
-
-        const formattedErrors = errors.flatMap((err) => formatError(err));
+        if (soloQueryParams) {
+          return new BadRequestException({
+            mensaje: 'Parámetros de consulta inválidos',
+            errores,
+          });
+        }
 
         return new UnprocessableEntityException({
           mensaje: 'Error de validación',
-          errores: formattedErrors,
+          errores,
         });
       },
     }),

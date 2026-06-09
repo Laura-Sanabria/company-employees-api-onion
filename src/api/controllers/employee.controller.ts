@@ -1,80 +1,196 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
   Post,
   Put,
-  Query,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  ForbiddenException,
 } from '@nestjs/common';
-import { EmployeeService } from '../../application/services/employee.service';
-import { CreateEmployeeDto } from '../../application/dtos/create-employee.dto';
-import { UpdateEmployeeDto } from '../../application/dtos/update-employee.dto';
-import { PatchEmployeeDto } from '../../application/dtos/patch-employee.dto';
-import { BulkCreateEmployeesDto } from '../../application/dtos/bulk-create-employees.dto';
-import { BulkDeleteEmployeesDto } from '../../application/dtos/bulk-delete-employees.dto';
-import { EmployeeListQueryDto } from '../../application/dtos/employee-list-query.dto';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../guards/roles.decorator';
+import { CityPolicyGuard } from '../guards/city-policy.guard';
+import { getCityPolicy } from '../../domain/policies/city-policy.interface';
+import * as bcrypt from 'bcrypt';
 
-@Controller('api/empleados')
+@Controller('employees')
+@UseGuards(JwtAuthGuard)
 export class EmployeeController {
-  constructor(private readonly employeeService: EmployeeService) {}
+  constructor(private prisma: PrismaService) { }
 
   @Get()
-  async findPaged(@Query() query: EmployeeListQueryDto) {
-    return this.employeeService.findPaged(query);
-  }
+  async findAll(@Request() req) {
+    // Si es admin, ve todos los empleados
+    if (req.user.rol === 'ADMIN') {
+      return this.prisma.employee.findMany({
+        include: {
+          compania: {
+            select: {
+              id: true,
+              nombre: true,
+              ciudad: true,
+            },
+          },
+        },
+      });
+    }
 
-  @Post('lote')
-  @HttpCode(HttpStatus.CREATED)
-  async createBulk(@Body() dto: BulkCreateEmployeesDto) {
-    const creados = await this.employeeService.createBulk(dto);
-    return {
-      mensaje: 'Creación masiva exitosa',
-      creados: creados.length,
-      empleados: creados,
-    };
-  }
+    // Si es empleado, solo ve los empleados de su empresa
+    const user = await this.prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { companiaId: true },
+    });
 
-  @Delete('lote')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBulk(@Body() dto: BulkDeleteEmployeesDto) {
-    await this.employeeService.deleteBulk(dto);
+    if (user?.companiaId) {
+      return this.prisma.employee.findMany({
+        where: { companiaId: user.companiaId },
+        include: {
+          compania: {
+            select: {
+              id: true,
+              nombre: true,
+              ciudad: true,
+            },
+          },
+        },
+      });
+    }
+
+    return [];
   }
 
   @Get(':id')
-  async findById(@Param('id') id: string) {
-    return this.employeeService.findById(+id);
+  async findOne(@Param('id') id: string, @Request() req) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        compania: {
+          select: {
+            id: true,
+            nombre: true,
+            ciudad: true,
+          },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new ForbiddenException('Empleado no encontrado');
+    }
+
+    // Si es empleado, verificar que pertenezca a su empresa
+    if (req.user.rol === 'EMPLEADO') {
+      const user = await this.prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { companiaId: true },
+      });
+
+      if (user?.companiaId !== employee.companiaId) {
+        throw new ForbiddenException('No tienes permiso para ver este empleado');
+      }
+    }
+
+    return employee;
   }
 
   @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeeService.create(createEmployeeDto);
-  }
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard, CityPolicyGuard)
+  async create(@Body() createEmployeeDto: any, @Request() req) {
+    const userCity = req.user.ciudad;
+    const policy = getCityPolicy(userCity);
 
-  @Patch(':id')
-  async patch(
-    @Param('id') id: string,
-    @Body() patchEmployeeDto: PatchEmployeeDto,
-  ) {
-    return this.employeeService.patch(+id, patchEmployeeDto);
+    if (!policy.canCreate) {
+      throw new ForbiddenException(`Los admins de ${userCity} no pueden crear empleados`);
+    }
+
+    return this.prisma.employee.create({
+      data: createEmployeeDto,
+      include: {
+        compania: {
+          select: {
+            id: true,
+            nombre: true,
+            ciudad: true,
+          },
+        },
+      },
+    });
   }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateEmployeeDto: UpdateEmployeeDto,
-  ) {
-    return this.employeeService.update(+id, updateEmployeeDto);
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard, CityPolicyGuard)
+  async update(@Param('id') id: string, @Body() updateEmployeeDto: any, @Request() req) {
+    const userCity = req.user.ciudad;
+    const policy = getCityPolicy(userCity);
+
+    if (!policy.canUpdate) {
+      throw new ForbiddenException(`Los admins de ${userCity} no pueden actualizar empleados`);
+    }
+
+    return this.prisma.employee.update({
+      where: { id: parseInt(id) },
+      data: updateEmployeeDto,
+      include: {
+        compania: {
+          select: {
+            id: true,
+            nombre: true,
+            ciudad: true,
+          },
+        },
+      },
+    });
+  }
+
+  @Patch(':id')
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard, CityPolicyGuard)
+  async patch(@Param('id') id: string, @Body() patchEmployeeDto: any, @Request() req) {
+    const userCity = req.user.ciudad;
+    const policy = getCityPolicy(userCity);
+
+    if (!policy.canPatch) {
+      throw new ForbiddenException(
+        `Los admins de ${userCity} no pueden hacer PATCH, use PUT para actualización completa`,
+      );
+    }
+
+    return this.prisma.employee.update({
+      where: { id: parseInt(id) },
+      data: patchEmployeeDto,
+      include: {
+        compania: {
+          select: {
+            id: true,
+            nombre: true,
+            ciudad: true,
+          },
+        },
+      },
+    });
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param('id') id: string) {
-    return this.employeeService.delete(+id);
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard, CityPolicyGuard)
+  async remove(@Param('id') id: string, @Request() req) {
+    const userCity = req.user.ciudad;
+    const policy = getCityPolicy(userCity);
+
+    if (!policy.canDelete) {
+      throw new ForbiddenException(`Los admins de ${userCity} no pueden eliminar empleados`);
+    }
+
+    return this.prisma.employee.delete({
+      where: { id: parseInt(id) },
+    });
   }
 }

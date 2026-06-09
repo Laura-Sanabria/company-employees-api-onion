@@ -8,12 +8,14 @@ datasource db {
 }
 
 model Company {
-  id            Int       @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
   nombre        String
   direccion     String
   telefono      String
-  fechaCreacion DateTime  @default(now())
+  ciudad        String     @default("medellin")
+  fechaCreacion DateTime   @default(now())
   empleados     Employee[]
+  usuarios      User[]
 }
 
 model Employee {
@@ -25,4 +27,16 @@ model Employee {
   salario    Float
   companiaId Int
   compania   Company  @relation(fields: [companiaId], references: [id])
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  nombre         String
+  correo         String   @unique
+  contrasenaHash String
+  rol            String   @default("EMPLEADO")
+  ciudad         String   @default("medellin")
+  companiaId     Int?
+  compania       Company? @relation(fields: [companiaId], references: [id])
+  fechaCreacion  DateTime @default(now())
 }

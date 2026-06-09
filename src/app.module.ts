@@ -1,13 +1,21 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { PrismaService } from './infrastructure/prisma/prisma.service';
+import { AuthController } from './api/controllers/auth.controller';
 import { CompanyController } from './api/controllers/company.controller';
 import { EmployeeController } from './api/controllers/employee.controller';
-import { CompanyService } from './application/services/company.service';
-import { EmployeeService } from './application/services/employee.service';
-import { PrismaService } from './infrastructure/prisma/prisma.service';
-import { UnitOfWork } from './shared/unit-of-work/unit-of-work.service';
+import { JwtStrategy } from './api/guards/jwt.strategy';
 
 @Module({
-  controllers: [CompanyController, EmployeeController],
-  providers: [CompanyService, EmployeeService, PrismaService, UnitOfWork],
+  imports: [
+    PassportModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'secretKey',
+      signOptions: { expiresIn: '8h' },
+    }),
+  ],
+  controllers: [AuthController, CompanyController, EmployeeController],
+  providers: [PrismaService, JwtStrategy],
 })
-export class AppModule {}
+export class AppModule { }

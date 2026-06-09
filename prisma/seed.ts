@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -11,6 +12,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Limpiando datos anteriores...');
   await prisma.employee.deleteMany();
+  await prisma.user.deleteMany();
   await prisma.company.deleteMany();
 
   console.log('🌱 Insertando datos iniciales...');
@@ -124,8 +126,32 @@ async function main() {
 
   await prisma.employee.createMany({ data: employees });
 
+  console.log('🌱 Creando usuarios iniciales...');
+  const salt = bcrypt.genSaltSync(10);
+  const adminHash = bcrypt.hashSync('admin123', salt);
+  const userHash = bcrypt.hashSync('user123', salt);
+
+  await prisma.user.create({
+    data: {
+      nombre: 'Administrador Principal',
+      correo: 'admin@ejemplo.com',
+      contrasenaHash: adminHash,
+      rol: 'ADMIN',
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      nombre: 'Usuario Regular',
+      correo: 'usuario@ejemplo.com',
+      contrasenaHash: userHash,
+      rol: 'USUARIO',
+      companiaId: company1.id,
+    },
+  });
+
   console.log('✅ Datos iniciales insertados correctamente');
-  console.log('📊 Compañías: 3 | Empleados: 10');
+  console.log('📊 Compañías: 3 | Empleados: 10 | Usuarios: 2');
 }
 
 main()

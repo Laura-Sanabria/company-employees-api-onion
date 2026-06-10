@@ -9,8 +9,13 @@ import { AppModule } from './app.module';
 import { PrismaExceptionFilter } from './api/filters/prisma-exception.filter';
 import { formatValidationErrors } from './api/pipes/validation.util';
 
+import * as express from 'express';
+import { join } from 'path';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
+  app.use(express.static(join(process.cwd(), 'public')));
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

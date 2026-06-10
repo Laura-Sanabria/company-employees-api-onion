@@ -16,5 +16,14 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "prisma",
+    "**/*.db",
+    "**/*.db-journal",
+    "**/*.db-wal",
+    "**/*.db-shm"
+  ]
 }

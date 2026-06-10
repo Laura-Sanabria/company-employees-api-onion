@@ -17,7 +17,9 @@ import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../guards/roles.decorator';
 import { CityPolicyGuard } from '../guards/city-policy.guard';
 import { getCityPolicy } from '../../domain/policies/city-policy.interface';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
+import { CreateEmployeeDto } from '../../application/dtos/create-employee.dto';
+import { PatchEmployeeDto } from '../../application/dtos/patch-employee.dto';
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard)
@@ -102,7 +104,7 @@ export class EmployeeController {
   @Post()
   @Roles('ADMIN')
   @UseGuards(RolesGuard, CityPolicyGuard)
-  async create(@Body() createEmployeeDto: any, @Request() req) {
+  async create(@Body() createEmployeeDto: CreateEmployeeDto, @Request() req) {
     const userCity = req.user.ciudad;
     const policy = getCityPolicy(userCity);
 
@@ -127,7 +129,7 @@ export class EmployeeController {
   @Put(':id')
   @Roles('ADMIN')
   @UseGuards(RolesGuard, CityPolicyGuard)
-  async update(@Param('id') id: string, @Body() updateEmployeeDto: any, @Request() req) {
+  async update(@Param('id') id: string, @Body() updateEmployeeDto: CreateEmployeeDto, @Request() req) {
     const userCity = req.user.ciudad;
     const policy = getCityPolicy(userCity);
 
@@ -153,7 +155,7 @@ export class EmployeeController {
   @Patch(':id')
   @Roles('ADMIN')
   @UseGuards(RolesGuard, CityPolicyGuard)
-  async patch(@Param('id') id: string, @Body() patchEmployeeDto: any, @Request() req) {
+  async patch(@Param('id') id: string, @Body() patchEmployeeDto: PatchEmployeeDto, @Request() req) {
     const userCity = req.user.ciudad;
     const policy = getCityPolicy(userCity);
 

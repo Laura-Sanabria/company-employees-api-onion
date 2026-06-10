@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Gestión de Empleados</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 30, 49, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-rose: #f43f5e;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Contenedor principal */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: var(--transition-smooth);
+        }
+
+        /* Login Screen */
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition-smooth);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--accent-rose);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Dashboard Screen */
+        .dashboard-wrapper {
+            display: none; /* Oculto por defecto */
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Dashboard Header */
+        .db-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .db-title h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .db-user-badge {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .user-details {
+            font-size: 0.85rem;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .user-role-city {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .city-tag {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            margin-left: 0.25rem;
+        }
+
+        .city-tag.medellin {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .city-tag.bogota {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-blue);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Policy Alert banner */
+        .policy-banner {
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid transparent;
+        }
+
+        .policy-banner.medellin {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .policy-banner.bogota {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .policy-icon {
+            font-size: 1.5rem;
+        }
+
+        .policy-text h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .policy-text p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .policy-rules {
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .rule-chip {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .rule-chip.allow {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+        }
+
+        .rule-chip.deny {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-rose);
+        }
+
+        /* Layout */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-header h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            width: auto;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--card-border);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text-primary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-action.delete {
+            color: var(--accent-rose);
+            border-color: rgba(244, 63, 94, 0.2);
+            background: rgba(244, 63, 94, 0.05);
+        }
+
+        .btn-action.delete:hover {
+            background: var(--accent-rose);
+            color: white;
+        }
+
+        .btn-action.edit {
+            color: var(--accent-cyan);
+            border-color: rgba(6, 182, 212, 0.2);
+            background: rgba(6, 182, 212, 0.05);
+        }
+
+        .btn-action.edit:hover {
+            background: var(--accent-cyan);
+            color: white;
+        }
+
+        .btn-action.patch {
+            color: var(--accent-purple);
+            border-color: rgba(139, 92, 246, 0.2);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .btn-action.patch:hover {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Modales */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-width: 500px;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease forwards;
+            max-width: 380px;
+            backdrop-filter: blur(8px);
+        }
+
+        .toast.success { border-left: 4px solid var(--accent-emerald); }
+        .toast.error { border-left: 4px solid var(--accent-rose); }
+        .toast.info { border-left: 4px solid var(--accent-cyan); }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .text-emerald { color: var(--accent-emerald); }
+        .flex-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- VISTA LOGIN -->
+        <div id="login-screen" class="login-wrapper">
+            <div class="glass-card login-card">
+                <div class="login-header">
+                    <h1>API Onion Portal</h1>
+                    <p>Ingresa tus credenciales de administrador</p>
+                </div>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Correo Electrónico</label>
+                        <input type="email" id="email" class="form-control" placeholder="nombre@empresa.com" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VISTA DASHBOARD -->
+        <div id="dashboard-screen" class="dashboard-wrapper">
+            <div class="db-header">
+                <div class="db-title">
+                    <h2>Panel de Control</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Gestión de Empleados y Compañías</p>
+                </div>
+                
+                <div class="db-user-badge">
+                    <div class="user-avatar" id="user-avatar-char">A</div>
+                    <div class="user-details">
+                        <div class="user-name" id="display-user-name">Administrador</div>
+                        <div class="user-role-city">
+                            <span id="display-user-role">ADMIN</span> - 
+                            <span id="display-user-city-tag" class="city-tag">MEDELLIN</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="logout()" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Salir</button>
+                </div>
+            </div>
+
+            <!-- Banner de Políticas de la Ciudad Activa -->
+            <div id="policy-banner" class="policy-banner">
+                <span class="policy-icon" id="policy-icon">📍</span>
+                <div class="policy-text">
+                    <h4 id="policy-title">Políticas de Ciudad Activas</h4>
+                    <p id="policy-desc">Las operaciones están reguladas por las políticas definidas para esta región.</p>
+                    <div class="policy-rules" id="policy-rules-container">
+                        <!-- Chips de reglas se cargarán aquí -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenido del Dashboard -->
+            <div class="dashboard-content">
+                <!-- Sección de Empleados -->
+                <div class="glass-card" style="padding: 1.75rem;">
+                    <div class="section-header">
+                        <h3>Empleados Registrados</h3>
+                        <button class="btn btn-primary btn-small" id="btn-create-employee" onclick="openCreateEmployeeModal()">+ Nuevo Empleado</button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Cargo</th>
+                                    <th>Compañía</th>
+                                    <th>Ciudad</th>
+                                    <th>Salario</th>
+                                    <th style="width: 240px; text-align: center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                        Cargando empleados...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EMPLEADO -->
+    <div id="employee-modal" class="modal">
+        <div class="glass-card modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Registrar Empleado</h3>
+                <button class="close-btn" onclick="closeEmployeeModal()">&times;</button>
+            </div>
+            <form id="employee-form">
+                <input type="hidden" id="emp-id">
+                <input type="hidden" id="form-mode" value="create">
+
+                <div class="form-group" id="group-nombre">
+                    <label for="emp-nombre">Nombre</label>
+                    <input type="text" id="emp-nombre" class="form-control" required>
+                </div>
+                <div class="form-group" id="group-apellido">
+                    <label for="emp-apellido">Apellido</label>
+                    <input type="text" id="emp-apellido" class="form-control" required>
+                </div>
+                <div class="form-group" id="group-correo">
+                    <label for="emp-correo">Correo Electrónico</label>
+                    <input type="email" id="emp-correo" class="form-control" required>
+                </div>
+                <div class="form-group" id="group-cargo">
+                    <label for="emp-cargo">Cargo</label>
+                    <input type="text" id="emp-cargo" class="form-control" required>
+                </div>
+                <div class="form-group" id="group-salario">
+                    <label for="emp-salario">Salario (COP)</label>
+                    <input type="number" id="emp-salario" class="form-control" min="1" step="any" required>
+                </div>
+                <div class="form-group" id="group-compania">
+                    <label for="emp-companiaId">Compañía</label>
+                    <select id="emp-companiaId" class="form-control" required style="background: rgba(15, 23, 42, 0.8);">
+                    </select>
+                </div>
+
+                <div class="flex-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeEmployeeModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-modal">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contenedor para notificaciones Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

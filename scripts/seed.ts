@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -63,7 +63,7 @@ async function main() {
     console.log('🏢 Creando empresas...');
 
     // Crear empresas
-    await prisma.company.create({
+    const comp1 = await prisma.company.create({
         data: {
             nombre: 'Tecnología Medellín SAS',
             direccion: 'Calle 50 #45-67',
@@ -72,7 +72,7 @@ async function main() {
         },
     });
 
-    await prisma.company.create({
+    const comp2 = await prisma.company.create({
         data: {
             nombre: 'Bogotá Business Group',
             direccion: 'Carrera 15 #88-90',
@@ -81,7 +81,7 @@ async function main() {
         },
     });
 
-    await prisma.company.create({
+    const comp3 = await prisma.company.create({
         data: {
             nombre: 'Innovación Colombia',
             direccion: 'Cra 42 #20-30',
@@ -94,22 +94,36 @@ async function main() {
 
     // Crear empleados
     const empleados = [
-        { nombre: 'Pedro López', correo: 'pedro@empresa.com', ciudad: 'medellin' },
-        { nombre: 'Laura Fernández', correo: 'laura@empresa.com', ciudad: 'bogota' },
-        { nombre: 'Rafael Sánchez', correo: 'rafael@empresa.com', ciudad: 'medellin' },
-        { nombre: 'Sofía Ramírez', correo: 'sofia@empresa.com', ciudad: 'bogota' },
-        { nombre: 'Diego Torres', correo: 'diego@empresa.com', ciudad: 'bogota' },
-        { nombre: 'Carmen Ruiz', correo: 'carmen@empresa.com', ciudad: 'medellin' },
+        { nombre: 'Pedro', apellido: 'López', correo: 'pedro@empresa.com', cargo: 'Desarrollador', salario: 3500000, companiaId: comp1.id, ciudad: 'medellin' },
+        { nombre: 'Laura', apellido: 'Fernández', correo: 'laura@empresa.com', cargo: 'Analista de Negocios', salario: 3200000, companiaId: comp2.id, ciudad: 'bogota' },
+        { nombre: 'Rafael', apellido: 'Sánchez', correo: 'rafael@empresa.com', cargo: 'Diseñador UI', salario: 2800000, companiaId: comp1.id, ciudad: 'medellin' },
+        { nombre: 'Sofía', apellido: 'Ramírez', correo: 'sofia@empresa.com', cargo: 'Project Manager', salario: 4500000, companiaId: comp2.id, ciudad: 'bogota' },
+        { nombre: 'Diego', apellido: 'Torres', correo: 'diego@empresa.com', cargo: 'Tester QA', salario: 3000000, companiaId: comp2.id, ciudad: 'bogota' },
+        { nombre: 'Carmen', apellido: 'Ruiz', correo: 'carmen@empresa.com', cargo: 'Especialista DevOps', salario: 4000000, companiaId: comp3.id, ciudad: 'medellin' },
     ];
 
     for (const emp of empleados) {
+        // 1. Crear en la tabla User (para poder autenticarse con su email y rol EMPLEADO si fuera necesario)
         await prisma.user.create({
             data: {
-                nombre: emp.nombre,
+                nombre: `${emp.nombre} ${emp.apellido}`,
                 correo: emp.correo,
                 contrasenaHash: hashedPassword,
                 rol: 'EMPLEADO',
                 ciudad: emp.ciudad,
+                companiaId: emp.companiaId,
+            },
+        });
+
+        // 2. Crear en la tabla Employee (para la gestión y visualización de empleados en el negocio)
+        await prisma.employee.create({
+            data: {
+                nombre: emp.nombre,
+                apellido: emp.apellido,
+                correo: emp.correo,
+                cargo: emp.cargo,
+                salario: emp.salario,
+                companiaId: emp.companiaId,
             },
         });
     }
